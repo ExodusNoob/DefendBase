@@ -30,6 +30,23 @@ public class WeaponAxe : WeaponClass
         if (axeHitbox == null)
             Debug.LogError("AxeHitbox no asignado en WeaponAxe");
     }
+    protected override void ResetWeaponState()
+    {
+        isAttacking = false;
+        comboStep = 0;
+
+        if (hitbox != null)
+            hitbox.SetActive(false);
+
+        if (animator != null && animator.isActiveAndEnabled)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+
+            //animator.ResetTrigger("Attack");
+            //animator.SetInteger("Combo", 0);
+        }
+    }
     protected override void Attack()
     {
         // No permitir atacar hasta que termine animación

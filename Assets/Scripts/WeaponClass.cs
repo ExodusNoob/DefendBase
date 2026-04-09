@@ -1,8 +1,11 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public abstract class WeaponClass : MonoBehaviour
 {
+    [SerializeField] private ControlPlayer playerControl;
+
     [Header("Weapon")]
     public string weaponName;
     public float damage;
@@ -17,13 +20,27 @@ public abstract class WeaponClass : MonoBehaviour
     float idleDelay = 4f;
     protected bool isWeaponActive = false;
 
+    public void SetPlayerRenderer(SpriteRenderer renderer)
+    {
+        playerRenderer = renderer;
+    }
+    public void Initialize(SpriteRenderer renderer, ControlPlayer control)
+    {
+        playerRenderer = renderer;
+        playerControl = control;
+        weaponRenderer = GetComponentInChildren<SpriteRenderer>();
+    }
+
     protected virtual void Awake()
     {
-        weaponRenderer = GetComponent<SpriteRenderer>();
+        weaponRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
     protected virtual void Update()
     {
+        if(isWeaponActive)
+            HandleFlipWhileAttacking();
+
         HandleInput();
         CheckIdleTimeout();
     }
@@ -58,10 +75,16 @@ public abstract class WeaponClass : MonoBehaviour
             isWeaponActive = false;
 
             transform.rotation = Quaternion.identity;
+
+            if (playerControl != null)
+                playerControl.ClearForceFlip();
         }
     }
     void UpdateSorting()
     {
+        if (weaponRenderer == null || playerRenderer == null)
+            return;
+
         if (isWeaponActive)
         {
             weaponRenderer.sortingOrder = playerRenderer.sortingOrder + 1;
@@ -70,6 +93,37 @@ public abstract class WeaponClass : MonoBehaviour
         {
             weaponRenderer.sortingOrder = playerRenderer.sortingOrder - 1;
         }
+    }
+    protected virtual void OnEnable()
+    {
+        isWeaponActive = false;
+    }
+    protected virtual void OnDisable()
+    {
+        ResetWeaponState();
+
+        if (playerControl != null)
+            playerControl.ClearForceFlip();
+    }
+    protected virtual void ResetWeaponState()
+    {
+        //vacio o cosas genericas que comparten las armas
+        if (playerControl != null)
+        {
+            playerControl.ClearForceFlip();
+        }
+    }
+    void HandleFlipWhileAttacking()
+    {
+        if (playerControl == null) return;
+        if (!isWeaponActive) return;
+
+        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        mousePos.z = 0f;
+
+        bool mouseLeft = mousePos.x < playerControl.transform.position.x;
+
+        playerControl.SetForcedFlip(mouseLeft);
     }
 
     protected abstract void Attack();

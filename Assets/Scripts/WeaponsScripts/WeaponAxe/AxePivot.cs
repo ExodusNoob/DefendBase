@@ -7,23 +7,28 @@ public class AxePivot : MonoBehaviour
 
     [SerializeField] float returnSpeed = 10f;
 
+    Camera cam;
+    Vector3 baseScale;
+
+    private void Awake()
+    {
+        cam = Camera.main;
+
+        baseScale = transform.localScale;
+    }
     void Update()
     {
         if (axeWeapon == null) return;
 
         if (axeWeapon.IsAttacking())
-        {
             RotateToMouse();
-        }
         else
-        {
             ReturnToDefault();
-        }
     }
 
     void RotateToMouse()
     {
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        Vector3 mousePos = cam.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         mousePos.z = 0f;
 
         Vector2 direction = mousePos - transform.position;
@@ -33,29 +38,33 @@ public class AxePivot : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, 0, angle);
 
         // FLIP LIMPIO
-        Vector3 scale = transform.localScale;
 
         if (angle > 90 || angle < -90)
-            scale.y = -1;
+            transform.localScale = new Vector3(-Mathf.Abs(baseScale.x),baseScale.y, baseScale.z);
         else
-            scale.y = 1;
-
-        transform.localScale = scale;
+            transform.localScale = new Vector3(Mathf.Abs(baseScale.x), baseScale.y, baseScale.z);
     }
 
     void ReturnToDefault()
     {
-        Quaternion targetRotation = Quaternion.identity;
-
         transform.rotation = Quaternion.Lerp(
             transform.rotation,
-            targetRotation,
+            Quaternion.identity,
             returnSpeed * Time.deltaTime
         );
-
-        // RESET FLIP
+    }
+    void OnDisable()
+    {
+        ResetPivot();
+    }
+    void OnEnable()
+    {
+        ResetPivot();
+    }
+    void ResetPivot()
+    {
+        transform.localRotation = Quaternion.identity;
         Vector3 scale = transform.localScale;
-        scale.y = 1;
-        transform.localScale = scale;
+        transform.localScale = baseScale;
     }
 }

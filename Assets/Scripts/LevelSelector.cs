@@ -14,6 +14,8 @@ public class LevelSelector : MonoBehaviour
 
     int currentLevel;
 
+    public PlayerWeaponManager weaponManager;
+
     void Start()
     {
         levelSlider.minValue = minLevel;
@@ -80,6 +82,18 @@ public class LevelSelector : MonoBehaviour
 
     public void ConfirmLevel()
     {
+        if (weaponManager == null)
+        {
+            Debug.Log("WeaponManager no asignado");
+            return;
+        }
+
+        if (!weaponManager.HasAnyWeaponEquipped())
+        {
+            Debug.Log("No tienes armas equipadas");
+            return;
+        }
+
         GameManager.Instance.SelectedEnemyLevel = currentLevel;
         SceneManager.LoadScene("TowerDefense");
     }

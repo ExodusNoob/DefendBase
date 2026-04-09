@@ -3,6 +3,9 @@ using UnityEngine;
 public class ControlPlayer : MonoBehaviour
 {
     private InputSystem_Actions controles;
+    float lastScrollTime;
+    float scrollCooldown = 0.2f;
+
     public Vector2 direccion;
     private Rigidbody2D _compRigidBody2;
     public int VelocidadPlayer = 10;
@@ -11,6 +14,14 @@ public class ControlPlayer : MonoBehaviour
     private SpriteRenderer _compSpriteRenderer;
     public bool IsMoving = false;
     public float horizontal;
+
+    private bool overrideFlip = false;
+    private bool forceFlipX;
+
+    public float GetScroll()
+    {
+        return controles.Player.ScrollWeapon.ReadValue<Vector2>().y;
+    }
     private void Awake()
     {
         controles = new();
@@ -29,8 +40,16 @@ public class ControlPlayer : MonoBehaviour
     }
 
     // Update is called once per frame
+    public event System.Action<float> OnScroll;
     void Update()
     {
+        float scroll = controles.Player.ScrollWeapon.ReadValue<Vector2>().y;
+        if (scroll != 0 && Time.time > lastScrollTime + scrollCooldown)
+        {
+            OnScroll?.Invoke(scroll);
+            lastScrollTime = Time.time;
+        }
+
         horizontal = direccion.x;
         direccion = controles.Player.Move.ReadValue<Vector2>(); 
 
@@ -45,15 +64,22 @@ public class ControlPlayer : MonoBehaviour
                 _compAnimator.SetInteger("SideMovement", horizontal < 0 ? -1 : 1);
 
             }
+            else
+            {
+                _compAnimator.SetInteger("SideMovement", 0);
+            }
 
             // Cambia la dirección del sprite según el movimiento
-            if (horizontal < 0)
+            if (overrideFlip)
             {
-                _compSpriteRenderer.flipX = true;
+                _compSpriteRenderer.flipX = forceFlipX;
             }
-            else if (horizontal > 0)
+            else
             {
-                _compSpriteRenderer.flipX = false;  
+                if (horizontal < 0)
+                    _compSpriteRenderer.flipX = true;
+                else if (horizontal > 0)
+                    _compSpriteRenderer.flipX = false;
             }
         }
         else
@@ -65,5 +91,17 @@ public class ControlPlayer : MonoBehaviour
     private void FixedUpdate()
     {
         _compRigidBody2.MovePosition(_compRigidBody2.position + Time.fixedDeltaTime * VelocidadPlayer * direccion.normalized);
+    }
+    public void SetForcedFlip(bool flip)
+    {
+        overrideFlip = true;
+        forceFlipX = flip;
+
+        //tmbn
+        _compSpriteRenderer.flipX = flip;
+    }
+    public void ClearForceFlip()
+    {
+        overrideFlip = false;
     }
 }
